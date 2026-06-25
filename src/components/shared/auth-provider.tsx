@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SessionProvider, signOut, useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { getStorage, setStorage } from "@/lib/storage";
 import type { ReactNode } from "react";
 
@@ -68,19 +67,21 @@ function CookieConsent() {
   if (!mounted || accepted) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-[80] rounded-2xl border border-border bg-surface/95 p-4 shadow-2xl shadow-black/40 backdrop-blur-xl md:left-auto md:w-[420px]">
-      <p className="text-sm font-semibold text-text">Cookie Notice</p>
-      <p className="mt-1 text-xs leading-relaxed text-muted">
-        Kami menggunakan cookie untuk menyimpan preferensi, sesi login, dan meningkatkan pengalaman penggunaan Sant.Ai.
-        Baca{" "}
-        <Link href="/legal/privacy" className="font-semibold text-primary hover:text-primary/80">Privacy Policy</Link>
-        {" "}dan{" "}
-        <Link href="/legal/terms" className="font-semibold text-primary hover:text-primary/80">Terms of Service</Link>.
+    <div className="fixed bottom-4 left-4 right-4 z-[80] border-2 border-text/20 bg-background/80 p-4 backdrop-blur-md md:left-auto md:w-[420px]">
+      <p className="text-xs font-bold uppercase text-text">🍪 Cookie Notice</p>
+      <p className="mt-1 text-xs leading-relaxed text-text/70">
+        Kami pakai cookie untuk sesi login & preferensi.{" "}
+        <Link href="/legal/privacy" className="font-bold underline hover:no-underline">Privacy</Link>
+        {" "}&{" "}
+        <Link href="/legal/terms" className="font-bold underline hover:no-underline">Terms</Link>.
       </p>
-      <div className="mt-4 flex justify-end">
-        <Button size="sm" className="h-9 px-4 text-xs" onClick={accept}>
+      <div className="mt-3 flex justify-end">
+        <button
+          onClick={accept}
+          className="border-2 border-text bg-text px-3 py-1.5 text-xs font-bold text-background hover:opacity-90"
+        >
           Terima
-        </Button>
+        </button>
       </div>
     </div>
   );
