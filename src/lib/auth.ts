@@ -1,7 +1,10 @@
 import { betterAuth } from "better-auth";
 import type { Session as BaseSession } from "better-auth";
+import { twoFactor, emailOTP, multiSession, username } from "better-auth/plugins";
 import { Pool } from "pg";
 import { dash } from "@better-auth/infra";
+import { sendVerificationEmail, sendPasswordResetEmail, sendOTP } from "./email";
+import { isReservedUsername } from "./reserved";
 
 export interface AuthUser {
   id: string;
@@ -23,6 +26,7 @@ export interface AuthUser {
   level: string;
   createdAt: Date;
   updatedAt: Date;
+  twoFactorEnabled: boolean;
 }
 
 export type AuthSession = BaseSession & { user: AuthUser };
@@ -31,12 +35,10 @@ export async function getAuthSession(headers: Headers): Promise<AuthSession | nu
   return auth.api.getSession({ headers }) as Promise<AuthSession | null>;
 }
 
-const dbUrl = new URL(process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL!);
-dbUrl.hostname = dbUrl.hostname.replace("-pooler", "");
-dbUrl.searchParams.set("options", "-c search_path=auth");
+const dbUrl = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL!;
 
 export const auth = betterAuth({
-  database: new Pool({ connectionString: dbUrl.toString() }),
+  database: new Pool({ connectionString: dbUrl }),
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
   basePath: "/api/auth",
@@ -44,6 +46,16 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
+    async sendResetPassword(data, request) {
+      await sendPasswordResetEmail(data.user.email, data.url);
+    },
+  },
+
+  emailVerification: {
+    sendVerificationEmail: async (data, request) => {
+      await sendVerificationEmail(data.user.email, data.url);
+    },
+    autoSignInAfterVerification: true,
   },
 
   socialProviders: {
@@ -57,9 +69,15 @@ export const auth = betterAuth({
     },
   },
 
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google", "github"],
+    },
+  },
+
   user: {
     additionalFields: {
-      username: { type: "string", required: true, unique: true, input: true },
       studyProgram: { type: "string", required: true, defaultValue: "TI" },
       semester: { type: "number", required: true, defaultValue: 1 },
       role: { type: "string", required: true, defaultValue: "User" },
@@ -73,9 +91,40 @@ export const auth = betterAuth({
       level: { type: "string" },
     },
     modelName: "user",
+    changeEmail: {
+      enabled: true,
+    },
   },
 
   plugins: [
+    multiSession({ maximumSessions: 5 }),
+    emailOTP({
+      async sendVerificationOTP({ email, otp, type }) {
+        await sendOTP(email, otp, type);
+      },
+      otpLength: 6,
+      expiresIn: 600,
+      allowedAttempts: 5,
+      rateLimit: { window: 60, max: 1 },
+      sendVerificationOnSignUp: true,
+      overrideDefaultEmailVerification: true,
+    }),
+    username({
+      minUsernameLength: 2,
+      maxUsernameLength: 30,
+      usernameValidator: (u) => !isReservedUsername(u),
+    }),
+    twoFactor({
+      issuer: "Sant.Ai",
+      totpOptions: {
+        digits: 6,
+        period: 30,
+        backupCodes: {
+          amount: 10,
+          length: 10,
+        },
+      },
+    }),
     dash(),
   ],
 });

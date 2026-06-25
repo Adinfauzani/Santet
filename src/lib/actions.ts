@@ -1,10 +1,19 @@
 "use server";
 
 import { prisma } from "./db";
-import { getAuthSession } from "./auth";
+import { getAuthSession, auth, type AuthSession } from "./auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { isReservedUsername, isValidUsername } from "./reserved";
+
+function requireEmailVerified(session: AuthSession | null): AuthSession {
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  if (!session.user.emailVerified) {
+    throw new Error("You must verify your email before taking this action.");
+  }
+  return session;
+}
 
 const LEVEL_THRESHOLDS = [
   { level: "Beginner", min: 0 },
@@ -45,8 +54,7 @@ async function addContribution(
 }
 
 export async function createProject(formData: FormData) {
-  const session = await getAuthSession(await headers());
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  const session = requireEmailVerified(await getAuthSession(await headers()));
 
   const title = formData.get("title") as string;
   const description = formData.get("description") as string;
@@ -88,8 +96,7 @@ export async function createProject(formData: FormData) {
 }
 
 export async function joinProject(projectId: string, role: string) {
-  const session = await getAuthSession(await headers());
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  const session = requireEmailVerified(await getAuthSession(await headers()));
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -130,8 +137,7 @@ export async function joinProject(projectId: string, role: string) {
 }
 
 export async function completeProject(projectId: string) {
-  const session = await getAuthSession(await headers());
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  const session = requireEmailVerified(await getAuthSession(await headers()));
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
@@ -165,8 +171,7 @@ export async function completeProject(projectId: string) {
 /* ── Ideas actions (removed — Ideas removed from navigation) ── */
 
 export async function addComment(formData: FormData) {
-  const session = await getAuthSession(await headers());
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  const session = requireEmailVerified(await getAuthSession(await headers()));
 
   const content = formData.get("content") as string;
   const projectId = formData.get("projectId") as string;
@@ -181,8 +186,7 @@ export async function addComment(formData: FormData) {
 }
 
 export async function updateProfile(formData: FormData) {
-  const session = await getAuthSession(await headers());
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  const session = requireEmailVerified(await getAuthSession(await headers()));
 
   const name = formData.get("name") as string;
   const username = formData.get("username") as string;
@@ -191,18 +195,21 @@ export async function updateProfile(formData: FormData) {
   const website = formData.get("website") as string;
   const location = formData.get("location") as string;
 
-  if (username) {
-    const existing = await prisma.user.findUnique({ where: { username } });
-    if (existing && existing.id !== session.user.id) {
-      throw new Error("Username already taken");
-    }
+  if (!isValidUsername(username)) {
+    throw new Error("Username must be 2-30 characters, letters/numbers/hyphens/underscores only.");
   }
 
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: { name, username, bio, avatar, website, location },
+  if (isReservedUsername(username)) {
+    throw new Error("This username is reserved and cannot be used.");
+  }
+
+  await auth.api.updateUser({
+    body: { name, username, bio, avatar, website, location },
+    headers: await headers(),
   });
 
-  revalidatePath(`/${session.user.username || username}`);
+  const oldUsername = session.user.username;
+  if (oldUsername) revalidatePath(`/${oldUsername}`);
+  revalidatePath(`/${username}`);
   revalidatePath("/dashboard");
 }

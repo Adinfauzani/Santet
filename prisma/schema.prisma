@@ -5,55 +5,99 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  schemas  = ["Santai", "Users", "auth"]
+  schemas  = ["Santai", "auth"]
 }
 
-enum UserRole {
-  User
-  Admin
-  Sudo
-
-  @@schema("Users")
-}
-
-enum Plan {
-  Free
-
-  @@schema("Users")
-}
-
-/// ── Users schema ────────────────────────────────────
+/// ── auth schema — Better Auth managed tables ──────────
 model User {
-  id               String   @id @default(cuid())
+  id               String    @id
   name             String
-  username         String?  @unique
-  email            String   @unique
-  password         String
-  studyProgram     String
-  semester         Int      @default(1)
-  avatar           String   @default("")
-  coverImage       String   @default("")
-  bio              String   @default("")
-  website          String   @default("")
-  location         String   @default("")
-  reputationPoints Int      @default(0)
-  level            String   @default("Beginner")
-  role             UserRole @default(User)
-  plan             Plan     @default(Free)
-  createdAt        DateTime @default(now())
+  email            String    @unique
+  emailVerified    Boolean   @default(false)
+  image            String?
+  username         String?   @unique
+  displayUsername  String?
+  studyProgram     String    @default("TI")
+  semester         Int       @default(1)
+  role             String    @default("User")
+  plan             String    @default("Free")
+  avatar           String    @default("")
+  coverImage       String    @default("")
+  bio              String    @default("")
+  website          String    @default("")
+  location         String    @default("")
+  reputationPoints Int       @default(0)
+  level            String    @default("Beginner")
+  twoFactorEnabled Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  ownedProjects Project[]
-  teamMembers   TeamMember[]
-  contributions Contribution[]
-  ideas         Idea[]
-  castVotes     Vote[]
-  comments      Comment[]
+  ownedProjects   Project[]
+  teamMembers     TeamMember[]
+  contributions   Contribution[]
+  ideas           Idea[]
+  castVotes       Vote[]
+  comments        Comment[]
+  sessions        Session[]
+  accounts        Account[]
 
-  @@schema("Users")
+  @@schema("auth")
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@schema("auth")
+  @@map("session")
+}
+
+model Account {
+  id                   String    @id
+  accountId            String
+  providerId           String
+  userId               String
+  accessToken          String?
+  refreshToken         String?
+  idToken              String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                String?
+  password             String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@schema("auth")
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@schema("auth")
+  @@map("verification")
 }
 
 /// ── Santai schema (all business tables) ─────────────
-
 model Project {
   id               String   @id @default(cuid())
   title            String
@@ -71,7 +115,7 @@ model Project {
   teamMembers   TeamMember[]
   projectRoles  ProjectRole[]
   contributions Contribution[]
-      comments      Comment[]
+  comments      Comment[]
 
   @@schema("Santai")
 }
@@ -112,8 +156,8 @@ model Idea {
   voteCount    Int      @default(0)
   createdAt    DateTime @default(now())
 
-  user     User      @relation(fields: [userId], references: [id])
-  comments Comment[]
+  user      User      @relation(fields: [userId], references: [id])
+  comments  Comment[]
   castVotes Vote[]
 
   @@schema("Santai")
@@ -229,4 +273,16 @@ model Keyword {
   updatedAt DateTime @updatedAt
 
   @@schema("Santai")
+}
+
+/// ── Better Auth: two-factor authentication ──────────
+model TwoFactor {
+  id          String  @id
+  userId      String
+  secret      String
+  backupCodes String?
+  verified    Boolean @default(false)
+
+  @@schema("auth")
+  @@map("twoFactor")
 }

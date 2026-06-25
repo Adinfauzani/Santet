@@ -4,8 +4,7 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     DATABASE_URL: z.string(),
-    NEXTAUTH_SECRET: z.string(),
-    AUTH_SECRET: z.string().optional(),
+    BETTER_AUTH_SECRET: z.string(),
     GNEWS_API_KEY: z.string().optional(),
     YOUTUBE_API_KEY: z.string().optional(),
   },
@@ -14,8 +13,7 @@ export const env = createEnv({
   },
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
-    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-    AUTH_SECRET: process.env.AUTH_SECRET,
+    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     GNEWS_API_KEY: process.env.GNEWS_API_KEY,
     YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,

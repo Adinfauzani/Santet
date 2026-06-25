@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient, useSession } from "@/lib/auth-client";
 import { Github, Loader2 } from "lucide-react";
+import VerifyOTP from "@/components/shared/verify-otp";
 
 const studyPrograms = [
   { value: "SD", label: "Sains Data (SD)" },
@@ -27,10 +28,9 @@ export default function RegisterForm() {
 
   useEffect(() => {
     const u = (session?.user as { username?: string } | undefined)?.username;
-    if (u) {
-      router.push(`/${u}`);
-    }
+    if (u) router.push(`/${u}`);
   }, [session, router]);
+
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -69,27 +69,17 @@ export default function RegisterForm() {
     setError("");
 
     try {
-      const username = generateUsername(name);
       const { error: err } = await authClient.signUp.email({
         name,
         email,
         password,
-      });
+        username: generateUsername(name),
+        studyProgram: studyProgram || "TI",
+        semester: parseInt(semester) || 1,
+      } as any);
 
       if (err) {
         throw new Error(err.message || err.code || "Registration failed");
-      }
-
-      // Sync: create Users.User record
-      const syncRes = await fetch("/api/sync-user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, username, studyProgram: studyProgram || "TI", semester: parseInt(semester) || 1 }),
-      });
-
-      if (!syncRes.ok) {
-        const syncErr = await syncRes.json();
-        console.error("Sync failed:", syncErr);
       }
 
       setSuccess(true);
@@ -105,29 +95,14 @@ export default function RegisterForm() {
     setOauthLoading(null);
   }
 
+  function handleVerified() {
+    router.push("/profile");
+  }
+
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="w-full max-w-sm border-2 border-text p-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center border-2 border-text">
-            <span className="text-xl font-bold text-text">✓</span>
-          </div>
-          <h2 className="mb-2 text-xl font-bold uppercase text-text">
-            Welcome!
-          </h2>
-          <p className="mb-6 text-sm text-text">
-            Your account is ready. Start exploring Sant.Ai.
-          </p>
-          <button
-            onClick={() => {
-              setSuccess(false);
-              router.refresh();
-            }}
-            className="w-full border-2 border-text bg-text px-4 py-2 text-sm font-bold text-background hover:opacity-90"
-          >
-            Go to Profile
-          </button>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
+        <VerifyOTP email={email} onVerified={handleVerified} type="email-verification" />
       </div>
     );
   }

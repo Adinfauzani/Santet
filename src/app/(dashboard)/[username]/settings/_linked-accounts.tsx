@@ -17,7 +17,7 @@ interface Props {
 const providerMeta: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   google: { label: "Google", icon: Mail, color: "text-blue-500" },
   github: { label: "GitHub", icon: Github, color: "text-text" },
-  credentials: { label: "Password", icon: Mail, color: "text-emerald-500" },
+  credential: { label: "Password", icon: Mail, color: "text-emerald-500" },
 };
 
 export default function LinkedAccountsSection({ linkedProviders, hasPassword, allMethods, username }: Props) {
@@ -34,11 +34,14 @@ export default function LinkedAccountsSection({ linkedProviders, hasPassword, al
   const handleUnlink = async (provider: string) => {
     setUnlinking(provider);
     try {
-      const res = await fetch(`/api/account/unlink/${provider}`, { method: "POST" });
+      const res = await fetch("/api/account/unlink", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ providerId: provider }),
+      });
       const data = await res.json();
       if (!res.ok) {
         toast.error(data.error || "Failed to unlink");
-        setUnlinking(null);
         return;
       }
       toast.success(`${providerMeta[provider]?.label || provider} disconnected`);
@@ -50,10 +53,10 @@ export default function LinkedAccountsSection({ linkedProviders, hasPassword, al
     }
   };
 
-  const providers = ["google", "github", "credentials"] as const;
+  const providers = ["google", "github", "credential"] as const;
 
   return (
-    <section className="rounded-lg border border-border bg-surface/5 p-4">
+    <div>
       <div className="mb-3 flex items-center gap-2">
         <Link2 className="h-4 w-4 text-muted" />
         <h2 className="text-sm font-semibold text-text">Linked Accounts</h2>
@@ -65,9 +68,9 @@ export default function LinkedAccountsSection({ linkedProviders, hasPassword, al
       <div className="space-y-2">
         {providers.map((provider) => {
           const meta = providerMeta[provider];
-          const isLinked = linkedProviders.includes(provider) || (provider === "credentials" && hasPassword);
+          const isLinked = linkedProviders.includes(provider) || (provider === "credential" && hasPassword);
           const isLoading = linking === provider || unlinking === provider;
-          const canUnlink = provider !== "credentials" && isLinked && allMethods.length > 1;
+          const canUnlink = provider !== "credential" && isLinked && allMethods.length > 1;
 
           return (
             <div
@@ -100,7 +103,7 @@ export default function LinkedAccountsSection({ linkedProviders, hasPassword, al
                     </button>
                   )}
                 </div>
-              ) : provider !== "credentials" ? (
+              ) : provider !== "credential" ? (
                 <button
                   onClick={() => handleLink(provider)}
                   className="rounded border border-border px-2.5 py-1 text-[10px] text-text transition-colors hover:bg-surface"
@@ -114,6 +117,6 @@ export default function LinkedAccountsSection({ linkedProviders, hasPassword, al
           );
         })}
       </div>
-    </section>
+    </div>
   );
 }

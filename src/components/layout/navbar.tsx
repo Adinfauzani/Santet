@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { usePathname } from "next/navigation";
-import { Menu, X, Bell, Sun, Moon } from "lucide-react";
+import { Menu, X, Bell, Sun, Moon, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/shared/theme-provider";
@@ -106,12 +106,19 @@ export default function Navbar() {
                 )}
               </div>
 
-              <a
-                href={(session?.user as any)?.username ? `/${(session.user as any).username}` : "/login"}
-                className="flex h-8 w-8 items-center justify-center rounded-md bg-surface text-xs font-semibold text-text hover:opacity-80"
-              >
-                {session?.user?.name?.charAt(0).toUpperCase() ?? "U"}
-              </a>
+              <div className="relative">
+                {(session?.user as any)?.emailVerified === false && (
+                  <Link href={`/${(session.user as any).username || "settings"}/settings`}>
+                    <AlertCircle className="absolute -right-1 -top-1 h-3 w-3 text-amber-500" />
+                  </Link>
+                )}
+                <a
+                  href={(session?.user as any)?.username ? `/${(session.user as any).username}` : "/profile"}
+                  className="flex h-8 w-8 items-center justify-center rounded-md bg-surface text-xs font-semibold text-text hover:opacity-80"
+                >
+                  {session?.user?.name?.charAt(0).toUpperCase() ?? "U"}
+                </a>
+              </div>
             </>
           )}
 

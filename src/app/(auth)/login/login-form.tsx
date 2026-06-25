@@ -1,30 +1,81 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { authClient } from "@/lib/auth-client";
-import { Github, Loader2 } from "lucide-react";
+import { authClient, useSession } from "@/lib/auth-client";
+import { Github, Loader2, KeyRound, Mail } from "lucide-react";
+import VerifyOTP from "@/components/shared/verify-otp";
 
 export default function LoginForm() {
+  const router = useRouter();
+  const { data: session } = useSession();
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [mode, setMode] = useState<"password" | "otp" | "verify">("password");
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    const user = session?.user as { username?: string; emailVerified?: boolean } | undefined;
+    if (!user) return;
+    if (user.emailVerified && user.username) {
+      router.push(`/${user.username}`);
+    }
+  }, [session, router]);
+
+  async function handlePasswordSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const { error: err } = await authClient.signIn.email({
-      email,
-      password,
-    });
+    const { error: err } = await authClient.signIn.email({ email, password });
 
     if (err) {
       setError("Invalid email or password");
+      setLoading(false);
+      return;
+    }
+
+    const user = (await authClient.getSession()).data?.user as { emailVerified?: boolean } | undefined;
+    if (user && !user.emailVerified) {
+      await authClient.emailOtp.sendVerificationOtp({ email, type: "email-verification" } as any);
+      setMode("verify");
+    }
+    setLoading(false);
+  }
+
+  async function handleSendOTP() {
+    setLoading(true);
+    setError("");
+    const { error: err } = await authClient.emailOtp.sendVerificationOtp({
+      email,
+      type: "sign-in",
+    });
+    if (err) {
+      setError(err.message || "Failed to send OTP");
+      setLoading(false);
+      return;
+    }
+    setLoading(false);
+    setMode("verify");
+  }
+
+  async function handleOTPSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const { error: err } = await authClient.signIn.emailOtp({
+      email,
+      otp,
+    });
+
+    if (err) {
+      setError(err.message || "Invalid code");
       setLoading(false);
     }
   }
@@ -35,6 +86,11 @@ export default function LoginForm() {
     setOauthLoading(null);
   }
 
+  function handleVerified() {
+    const username = (session?.user as { username?: string } | undefined)?.username;
+    router.push(username ? `/${username}` : "/profile");
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm border-2 border-text p-8">
@@ -42,6 +98,7 @@ export default function LoginForm() {
           Sign In
         </h1>
 
+        {/* OAuth */}
         <div className="mb-6 space-y-2">
           <button
             onClick={() => handleOAuth("github")}
@@ -76,33 +133,87 @@ export default function LoginForm() {
           <div className="flex-1 border-t-2 border-text" />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="mb-1 block text-xs font-bold uppercase text-text">Email</label>
-            <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
-              placeholder="you@univ.ac.id"
-              className="w-full border-2 border-text bg-background px-3 py-2 text-sm text-text placeholder:text-text/30 focus:outline-none" />
-          </div>
-          <div>
-            <label htmlFor="password" className="mb-1 block text-xs font-bold uppercase text-text">Password</label>
-            <div className="relative">
-              <input id="password" type={show ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required
-                placeholder="enter password"
-                className="w-full border-2 border-text bg-background px-3 py-2 pr-10 text-sm text-text placeholder:text-text/30 focus:outline-none" />
-              <button type="button" onClick={() => setShow(!show)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-xs uppercase text-text hover:underline" tabIndex={-1}>
-                {show ? "hide" : "show"}
-              </button>
-            </div>
-          </div>
-          {error && (
-            <p className="border-2 border-red-600 bg-red-600/10 px-3 py-2 text-xs text-red-600">{error}</p>
-          )}
-          <button type="submit" disabled={loading}
-            className="w-full border-2 border-text bg-text px-4 py-2 text-sm font-bold text-background hover:opacity-90 disabled:opacity-50">
-            {loading ? "Signing in..." : "Sign In"}
+        {/* Mode Toggle */}
+        <div className="mb-4 flex border-2 border-text text-xs">
+          <button
+            type="button"
+            onClick={() => { setMode("password"); setError(""); }}
+            className={`flex-1 py-2 text-center font-bold uppercase transition-colors ${
+              mode === "password" ? "bg-text text-background" : "text-text hover:bg-text/10"
+            }`}
+          >
+            <KeyRound className="mr-1.5 inline h-3 w-3" />
+            Password
           </button>
-        </form>
+          <button
+            type="button"
+            onClick={() => { setMode("otp"); setError(""); setOtp(""); }}
+            className={`flex-1 py-2 text-center font-bold uppercase transition-colors ${
+              mode === "otp" || mode === "verify" ? "bg-text text-background" : "text-text hover:bg-text/10"
+            }`}
+          >
+            <Mail className="mr-1.5 inline h-3 w-3" />
+            OTP
+          </button>
+        </div>
+
+        {/* Password Mode */}
+        {mode === "password" && (
+          <form onSubmit={handlePasswordSubmit} className="space-y-4">
+            <div>
+              <label className="mb-1 block text-xs font-bold uppercase text-text">Email</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+                placeholder="you@univ.ac.id"
+                className="w-full border-2 border-text bg-background px-3 py-2 text-sm text-text placeholder:text-text/30 focus:outline-none" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-bold uppercase text-text">Password</label>
+              <div className="relative">
+                <input type={show ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required
+                  placeholder="enter password"
+                  className="w-full border-2 border-text bg-background px-3 py-2 pr-10 text-sm text-text placeholder:text-text/30 focus:outline-none" />
+                <button type="button" onClick={() => setShow(!show)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs uppercase text-text hover:underline" tabIndex={-1}>
+                  {show ? "hide" : "show"}
+                </button>
+              </div>
+            </div>
+            {error && (
+              <p className="border-2 border-red-600 bg-red-600/10 px-3 py-2 text-xs text-red-600">{error}</p>
+            )}
+            <button type="submit" disabled={loading}
+              className="w-full border-2 border-text bg-text px-4 py-2 text-sm font-bold text-background hover:opacity-90 disabled:opacity-50">
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
+          </form>
+        )}
+
+        {/* OTP Mode — enter email */}
+        {mode === "otp" && (
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1 block text-xs font-bold uppercase text-text">Email</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+                placeholder="you@univ.ac.id"
+                className="w-full border-2 border-text bg-background px-3 py-2 text-sm text-text placeholder:text-text/30 focus:outline-none" />
+            </div>
+            {error && (
+              <p className="border-2 border-red-600 bg-red-600/10 px-3 py-2 text-xs text-red-600">{error}</p>
+            )}
+            <button onClick={handleSendOTP} disabled={loading || !email}
+              className="w-full border-2 border-text bg-text px-4 py-2 text-sm font-bold text-background hover:opacity-90 disabled:opacity-50">
+              {loading ? "Sending..." : "Send OTP"}
+            </button>
+            <p className="text-center text-[10px] text-text/60">
+              New users will be automatically registered.
+            </p>
+          </div>
+        )}
+
+        {/* Verify Mode */}
+        {mode === "verify" && (
+          <VerifyOTP email={email} onVerified={handleVerified} type={session ? "email-verification" : "sign-in"} />
+        )}
 
         <p className="mt-6 text-center text-xs text-text">
           No account?{" "}
