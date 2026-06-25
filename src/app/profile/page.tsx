@@ -1,10 +1,21 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
+"use client";
 
-export default async function ProfilePage() {
-  const session = await auth();
-  if (session?.user?.username) {
-    redirect(`/${session.user.username}`);
-  }
-  redirect("/login");
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
+export default function ProfileRedirect() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "loading") return;
+    if (session?.user?.username) {
+      router.replace(`/${session.user.username}`);
+    } else {
+      router.replace("/login");
+    }
+  }, [session, status, router]);
+
+  return null;
 }
