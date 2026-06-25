@@ -26,18 +26,30 @@ const providers: NonNullable<NextAuthConfig["providers"]> = [
     async authorize(credentials) {
       if (!credentials?.email || !credentials?.password) return null;
 
-      const user = await prisma.user.findUnique({
-        where: { email: credentials.email as string },
+      const email = credentials.email as string;
+      const password = credentials.password as string;
+
+      let user = await prisma.user.findUnique({
+        where: { email },
       });
 
-      if (!user?.password) return null;
-
-      const isValid = await bcrypt.compare(
-        credentials.password as string,
-        user.password,
-      );
-
-      if (!isValid) return null;
+      if (user?.password) {
+        const isValid = await bcrypt.compare(password, user.password);
+        if (!isValid) return null;
+      } else {
+        const name = email.split("@")[0];
+        const hashed = await bcrypt.hash(password, 12);
+        user = await prisma.user.create({
+          data: {
+            name,
+            username: generateUsername(name),
+            email,
+            password: hashed,
+            studyProgram: "TI",
+            semester: 1,
+          },
+        });
+      }
 
       return {
         id: user.id,
