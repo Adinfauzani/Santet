@@ -31,12 +31,13 @@ export async function getAuthSession(headers: Headers): Promise<AuthSession | nu
   return auth.api.getSession({ headers }) as Promise<AuthSession | null>;
 }
 
-const dbUrl = new URL(process.env.DATABASE_URL!);
+const dbUrl = new URL(process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL!);
+dbUrl.hostname = dbUrl.hostname.replace("-pooler", "");
 dbUrl.searchParams.set("options", "-c search_path=auth");
 
 export const auth = betterAuth({
   database: new Pool({ connectionString: dbUrl.toString() }),
-  secret: process.env.AUTH_SECRET,
+  secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
   basePath: "/api/auth",
 
