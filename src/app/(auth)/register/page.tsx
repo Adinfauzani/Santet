@@ -74,7 +74,7 @@ export default function RegisterPage() {
 
   async function handleOAuth(provider: string) {
     setOauthLoading(provider);
-    await signIn(provider, { redirectTo: "/profile" });
+    await signIn(provider, { redirectTo: "/" });
   }
 
   if (success) {
@@ -93,7 +93,7 @@ export default function RegisterPage() {
           <button
             onClick={() => {
               setSuccess(false);
-              router.push("/profile");
+              router.push("/");
               router.refresh();
             }}
             className="w-full border-2 border-text bg-text px-4 py-2 text-sm font-bold text-background hover:opacity-90"

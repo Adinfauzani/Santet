@@ -30,14 +30,14 @@ export default function LoginPage() {
       setError("Invalid email or password");
       setLoading(false);
     } else {
-      router.push("/profile");
+      router.push("/");
       router.refresh();
     }
   }
 
   async function handleOAuth(provider: string) {
     setOauthLoading(provider);
-    await signIn(provider, { redirectTo: "/profile" });
+    await signIn(provider, { redirectTo: "/" });
   }
 
   return (

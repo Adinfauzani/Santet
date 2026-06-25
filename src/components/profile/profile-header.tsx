@@ -1,7 +1,7 @@
 "use client";
 
 import type { User } from "@/generated/prisma/client";
-import { MapPin, Globe, Calendar, Award, Pencil } from "lucide-react";
+import { MapPin, Globe, Calendar, Award, Pencil, Settings } from "lucide-react";
 import Link from "next/link";
 import LogoutButton from "@/components/profile/logout-button";
 
@@ -50,6 +50,13 @@ export default function ProfileHeader({ user, isOwner }: Props) {
                   <Pencil className="h-3 w-3" />
                   Edit profile
                 </button>
+                <Link
+                  href="/security"
+                  className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-[11px] text-muted transition-colors hover:bg-surface hover:text-text"
+                >
+                  <Settings className="h-3 w-3" />
+                  Settings
+                </Link>
                 <LogoutButton />
               </>
             )}
