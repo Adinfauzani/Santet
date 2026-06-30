@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import Script from "next/script";
 import { Toaster } from "sonner";
 import AuthProvider from "@/components/shared/authProvider";
 import FirebaseProvider from "@/components/shared/firebaseProvider";
@@ -40,7 +39,6 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning className={`${bodyFont.variable} ${headingFont.variable}`}>
       <body>
-        <Script src="/scripts/theme-init.js" strategy="beforeInteractive" async />
         <ThemeProvider>
           <AuthProvider>
             <FirebaseProvider>{children}</FirebaseProvider>

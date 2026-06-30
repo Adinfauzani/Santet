@@ -53,3 +53,11 @@ Thumbs.db
 *.pem
 *.key
 *.crt
+
+# Linear API scripts (contains sensitive API keys in usage)
+scripts/linear/*
+
+# Utility files
+docs/*
+*/docs/*
+figma/*
