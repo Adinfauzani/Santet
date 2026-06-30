@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.1] — 2026-06-30
+
+### Fixed
+- Remove broken Linear components from dashboard (build error)
+- Cleanup unused theme-init script
+
 ## [0.5.0] — 2026-06-27
 
 ### Added

@@ -13,8 +13,6 @@ import { cn } from "@/lib/utils";
 import { Card } from "./_components";
 import { fetchDashboardStats, defaultStats, fetchArticles, fetchYouTube } from "@/lib/data";
 import { usePolling } from "@/lib/usePolling";
-import { LinearReport } from "@/components/linear/linear-report";
-import { LinearActivity } from "@/components/linear/linear-activity";
 
 const COLORS = ["#2563eb", "#8b5cf6", "#f59e0b", "#10b981", "#ef4444", "#06b6d4", "#ec4899"];
 
@@ -183,12 +181,8 @@ export default function DashboardHome() {
         </Card>
       </div>
 
-      {/* Linear Progress */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-1">
-          <LinearReport />
-        </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-3">
           <Card title="Recent Activity">
             <div className="space-y-1">
               {activity.length > 0 ? activity.map((a, i) => (
