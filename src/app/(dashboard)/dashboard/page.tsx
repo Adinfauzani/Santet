@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { Card } from "./_components";
 import { fetchDashboardStats, defaultStats, fetchArticles, fetchYouTube } from "@/lib/data";
 import { usePolling } from "@/lib/usePolling";
+import { LinearReport } from "@/components/linear/linear-report";
+import { LinearActivity } from "@/components/linear/linear-activity";
 
 const COLORS = ["#2563eb", "#8b5cf6", "#f59e0b", "#10b981", "#ef4444", "#06b6d4", "#ec4899"];
 
@@ -94,7 +96,7 @@ export default function DashboardHome() {
       <div>
         <h1 className="font-heading text-2xl font-bold text-text">Dashboard</h1>
         <p className="mt-0.5 text-xs text-muted">
-          Data Intelligence Command Center — {new Date().toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+          Data Intelligence Command Center {new Date().toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
         </p>
       </div>
 
@@ -181,28 +183,35 @@ export default function DashboardHome() {
         </Card>
       </div>
 
-      {/* Recent Activity */}
-      <Card title="Recent Activity">
-        <div className="space-y-1">
-          {activity.length > 0 ? activity.map((a, i) => (
-            <div key={i} className="flex items-center gap-3 rounded-xl bg-surface/20 px-3 py-2.5">
-              <div className={cn(
-                "flex h-6 w-6 items-center justify-center rounded-lg",
-                a.type === "article" ? "bg-blue-500/10" : "bg-red-500/10",
-              )}>
-                {a.type === "article" ? <Newspaper className="h-3 w-3 text-blue-500" /> : <Youtube className="h-3 w-3 text-red-500" />}
-              </div>
-              <div className="flex-1">
-                <p className="text-xs font-medium text-text">{a.title}</p>
-                <p className="text-[9px] text-muted">{a.source}</p>
-              </div>
-              <span className="text-[9px] text-muted">{new Date(a.time).toLocaleDateString("id-ID")}</span>
-            </div>
-          )) : (
-            <p className="py-6 text-center text-[10px] text-muted">No activity yet. Data appears after GNews and YouTube fetchers run.</p>
-          )}
+      {/* Linear Progress */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-1">
+          <LinearReport />
         </div>
-      </Card>
+        <div className="lg:col-span-2">
+          <Card title="Recent Activity">
+            <div className="space-y-1">
+              {activity.length > 0 ? activity.map((a, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-xl bg-surface/20 px-3 py-2.5">
+                  <div className={cn(
+                    "flex h-6 w-6 items-center justify-center rounded-lg",
+                    a.type === "article" ? "bg-blue-500/10" : "bg-red-500/10",
+                  )}>
+                    {a.type === "article" ? <Newspaper className="h-3 w-3 text-blue-500" /> : <Youtube className="h-3 w-3 text-red-500" />}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-text">{a.title}</p>
+                    <p className="text-[9px] text-muted">{a.source}</p>
+                  </div>
+                  <span className="text-[9px] text-muted">{new Date(a.time).toLocaleDateString("id-ID")}</span>
+                </div>
+              )) : (
+                <p className="py-6 text-center text-[10px] text-muted">No activity yet. Data appears after GNews and YouTube fetchers run.</p>
+              )}
+            </div>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

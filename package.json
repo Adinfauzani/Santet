@@ -70,13 +70,16 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.0",
+    "@linear/sdk": "^87.0.0",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.13.0",
     "@types/pg": "^8.20.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "docx": "^9.7.1",
     "dotenv": "^17.4.2",
     "eslint": "^9.22.0",
+    "html-to-docx": "^1.8.0",
     "tailwindcss": "^4.0.0",
     "tsx": "^4.22.4",
     "typescript": "^5.7.3"

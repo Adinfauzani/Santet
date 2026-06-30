@@ -278,6 +278,19 @@ model Keyword {
   @@schema("Santai")
 }
 
+/// ── Linear webhook events ───────────────────────────
+model LinearWebhookEvent {
+  id        String   @id @default(cuid())
+  action    String   @default("")
+  type      String   @default("")
+  payload   String   @default("{}")
+  issueId   String?
+  createdAt DateTime @default(now())
+
+  @@schema("Santai")
+  @@map("linear_webhook_event")
+}
+
 /// ── Better Auth: two-factor authentication ──────────
 model TwoFactor {
   id          String  @id
