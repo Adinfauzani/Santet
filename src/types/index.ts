@@ -1,7 +1,5 @@
 export type StudyProgram = "SD" | "TI" | "SI";
-
 export type ProjectStatus = "Open" | "In Progress" | "Completed";
-
 export type ReputationLevel = "Beginner" | "Active" | "Lead" | "Expert";
 
 export interface UserProfile {
@@ -64,7 +62,7 @@ export interface IdeaWithDetails {
   id: string;
   title: string;
   description: string;
-  studyProgram: string;
+  studyProgram: StudyProgram;
   userId: string;
   voteCount: number;
   createdAt: Date;
